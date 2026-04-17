@@ -3,7 +3,7 @@ import os
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
-MEMORY_DIR = os.path.join(os.path.dirname(__file__), '.memory')
+MEMORY_DIR = os.path.dirname(__file__)
 SHORT_TERM_MEMORY_DURATION = 24  # 短期记忆持续时间（小时）
 LONG_TERM_MEMORY_THRESHOLD = 0.8  # 转为长期记忆的权重阈值
 
