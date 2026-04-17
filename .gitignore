@@ -1,0 +1,26 @@
+# Trae IDE files
+.trae/cache/
+.trae/logs/
+
+# Memory data files
+.trae/skills/memory-graph/.memory/*.json
+.trae/skills/memory-graph/.memory/analysis_report.txt
+.trae/skills/memory-graph/.memory/graph_export.json
+
+# Zip files
+*.zip
+
+# Python files
+__pycache__/
+*.pyc
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+Thumbs.db
+.DS_Store
