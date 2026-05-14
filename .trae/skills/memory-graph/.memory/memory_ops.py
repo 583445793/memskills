@@ -431,7 +431,7 @@ class Neo4jMemoryGraph:
                 """
                 MATCH (e:Entity {name: $name})
                 SET e.access_count = e.access_count + 1,
-                    e.strength = CASE WHEN e.strength IS NULL THEN 0.6 ELSE min(1.0, e.strength + 0.1) END,
+                    e.strength = CASE WHEN e.strength IS NULL THEN 0.6 WHEN e.strength + 0.1 > 1.0 THEN 1.0 ELSE e.strength + 0.1 END,
                     e.last_accessed = $now_datetime
                 WITH e
                 WHERE e.memory_type = 'short_term' AND e.access_count >= 3
@@ -569,7 +569,9 @@ class Neo4jMemoryGraph:
             # 获取节点
             entity_results = session.run("MATCH (e:Entity) RETURN e").data()
             for record in entity_results:
-                entity = record['e']._properties
+                entity = record['e']
+                if hasattr(entity, '_properties'):
+                    entity = entity._properties
                 nodes.append({
                     'id': entity.get('name', ''),
                     'label': entity.get('name', ''),
@@ -579,14 +581,16 @@ class Neo4jMemoryGraph:
                     'access_count': entity.get('access_count', 0)
                 })
             
-            # 获取边
-            relation_results = session.run("MATCH (a)-[r:RELATION]->(b) RETURN a, r, b").data()
+            # 获取边（使用不同的查询方式获取关系属性）
+            relation_results = session.run(
+                "MATCH (a)-[r:RELATION]->(b) RETURN a.name as a_name, b.name as b_name, r.type as r_type, r.weight as r_weight"
+            ).data()
             for record in relation_results:
                 edges.append({
-                    'source': record['a']._properties.get('name', ''),
-                    'target': record['b']._properties.get('name', ''),
-                    'label': record['r']._properties.get('type', ''),
-                    'weight': record['r']._properties.get('weight', 0.5)
+                    'source': record.get('a_name', ''),
+                    'target': record.get('b_name', ''),
+                    'label': record.get('r_type', ''),
+                    'weight': record.get('r_weight', 0.5)
                 })
         
         graph_data = {
