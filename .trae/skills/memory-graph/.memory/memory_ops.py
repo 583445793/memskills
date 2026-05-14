@@ -10,7 +10,7 @@ try:
 except ImportError:
     NEO4J_AVAILABLE = False
 
-MEMORY_DIR = os.path.join(os.path.dirname(__file__), '.memory')
+MEMORY_DIR = os.path.dirname(__file__)
 CONFIG_PATH = os.path.join(MEMORY_DIR, 'neo4j_config.ini')
 
 SHORT_TERM_MEMORY_DURATION = 24  # 短期记忆持续时间（小时）
@@ -158,7 +158,7 @@ class Neo4jMemoryGraph:
                 MATCH (a:Entity {name: $from_name}), (b:Entity {name: $to_name})
                 MERGE (a)-[r:RELATION {type: $relation_type}]->(b)
                 ON CREATE SET r.weight = $weight, r.created = $created
-                ON MATCH SET r.weight = max(r.weight, $weight)
+                ON MATCH SET r.weight = CASE WHEN r.weight < $weight THEN $weight ELSE r.weight END
                 RETURN r
                 """,
                 from_name=from_name,
@@ -335,7 +335,7 @@ class Neo4jMemoryGraph:
                     MATCH (a:Entity {name: $from_name}), (b:Entity {name: $to_name})
                     MERGE (a)-[r:RELATION {type: $relation_type}]->(b)
                     ON CREATE SET r.weight = $weight, r.created = $now_date
-                    ON MATCH SET r.weight = max(r.weight, $weight)
+                    ON MATCH SET r.weight = CASE WHEN r.weight < $weight THEN $weight ELSE r.weight END
                     """,
                     from_name=from_name,
                     to_name=to_name,
