@@ -4,6 +4,7 @@
 
 # Memory data files
 .trae/skills/memory-graph/.memory/*.json
+.trae/skills/memory-graph/.memory/*.ini
 .trae/skills/memory-graph/.memory/analysis_report.txt
 .trae/skills/memory-graph/.memory/graph_export.json
 

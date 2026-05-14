@@ -1,23 +1,58 @@
 ---
 name: "memory-graph"
-description: "基于图谱的记忆系统。对话开始前检索相关记忆，对话结束后提取并保存关键信息。当用户开启新对话或需要延续上下文时调用。"
+description: "基于Neo4j图谱的记忆系统。对话开始前检索相关记忆，对话结束后提取并保存关键信息。当用户开启新对话或需要延续上下文时调用。"
 ---
 
 # 记忆图谱系统 (Memory Graph)
 
 ## 功能概述
 
-这是一个基于图谱的记忆系统，在每次对话开始前检索相关记忆，对话结束后保存关键信息。
+这是一个基于**Neo4j图数据库**的记忆系统，在每次对话开始前检索相关记忆，对话结束后保存关键信息。
+
+## 依赖安装
+
+```bash
+pip install -r .trae/skills/memory-graph/.memory/requirements.txt
+```
+
+## Neo4j配置
+
+配置文件位于 `.trae/skills/memory-graph/.memory/neo4j_config.ini`：
+
+```ini
+[neo4j]
+host = localhost
+port = 7687
+username = neo4j
+password = password
+database = neo4j
+```
+
+**部署说明**：
+1. 安装并启动Neo4j数据库
+2. 修改配置文件中的连接信息
+3. 运行 `python memory_ops.py retrieve "test"` 测试连接
 
 ## 记忆存储结构
 
-记忆存储在 `.trae/skills/memory-graph/.memory/` 目录下：
+**数据存储**：主要存储在 **Neo4j图数据库** 中
+
+**节点类型**：
+- `Entity` - 实体节点（用户、项目、技术、偏好等）
+- `Conversation` - 对话节点（对话历史摘要）
+
+**关系类型**：
+- `RELATION` - 实体间的关联关系
+
+**目录结构**：
 
 ```
 .memory/
-├── entities.json      # 实体库（用户、项目、技术、偏好等）
-├── relations.json    # 关系图谱（实体间的关联）
-└── conversations.json # 对话历史摘要
+├── neo4j_config.ini   # Neo4j连接配置
+├── requirements.txt   # Python依赖
+├── memory_ops.py      # 记忆操作模块
+├── analysis_report.txt # 分析报告（生成后）
+└── graph_export.json   # 图谱导出（生成后）
 ```
 
 ## 触发时机
