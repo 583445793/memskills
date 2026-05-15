@@ -475,25 +475,67 @@ class Neo4jMemoryGraph:
             return "Neo4j不可用，请检查连接"
         
         with self.driver.session() as session:
+            # 获取所有重复实体
             result = session.run(
                 """
                 MATCH (e:Entity)
                 WITH toLower(e.name) AS name_lower, COLLECT(e) AS entities
                 WHERE SIZE(entities) > 1
-                WITH entities[0] AS main, TAIL(entities) AS others
-                UNWIND others AS other
-                MATCH (other)-[r]->()
-                MERGE (main)-[nr:RELATION {type: r.type}]->((r)->())
-                ON CREATE SET nr.weight = r.weight, nr.created = r.created
-                ON MATCH SET nr.weight = max(nr.weight, r.weight)
-                DETACH DELETE other
-                RETURN COUNT(DISTINCT others) AS count
+                RETURN entities
                 """
             )
-            record = result.single()
-            count = record['count'] if record else 0
+            
+            organized_count = 0
+            for record in result:
+                entities = record['entities']
+                if len(entities) < 2:
+                    continue
+                    
+                main = entities[0]
+                others = entities[1:]
+                
+                for other in others:
+                    # 转移出边关系
+                    session.run(
+                        """
+                        MATCH (other:Entity {name: $other_name})
+                        MATCH (other)-[r]->(target)
+                        WITH target, r
+                        MATCH (main:Entity {name: $main_name})
+                        MERGE (main)-[nr:RELATION {type: r.type}]->(target)
+                        ON CREATE SET nr.weight = r.weight, nr.created = r.created
+                        ON MATCH SET nr.weight = CASE WHEN nr.weight < r.weight THEN r.weight ELSE nr.weight END
+                        DELETE r
+                        """,
+                        other_name=other['name'],
+                        main_name=main['name']
+                    )
+                    
+                    # 转移入边关系
+                    session.run(
+                        """
+                        MATCH (other:Entity {name: $other_name})
+                        MATCH (source)-[r]->(other)
+                        WITH source, r
+                        MATCH (main:Entity {name: $main_name})
+                        MERGE (source)-[nr:RELATION {type: r.type}]->(main)
+                        ON CREATE SET nr.weight = r.weight, nr.created = r.created
+                        ON MATCH SET nr.weight = CASE WHEN nr.weight < r.weight THEN r.weight ELSE nr.weight END
+                        DELETE r
+                        """,
+                        other_name=other['name'],
+                        main_name=main['name']
+                    )
+                    
+                    # 删除重复实体
+                    session.run(
+                        "MATCH (e:Entity {name: $name}) DETACH DELETE e",
+                        name=other['name']
+                    )
+                    
+                    organized_count += 1
         
-        return f"已整理 {count} 个记忆"
+        return f"已整理 {organized_count} 个记忆"
     
     def analyze_memories(self) -> str:
         """生成记忆分析报告"""
