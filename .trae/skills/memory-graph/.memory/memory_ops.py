@@ -434,9 +434,10 @@ class Neo4jMemoryGraph:
                     e.strength = CASE WHEN e.strength IS NULL THEN 0.6 WHEN e.strength + 0.1 > 1.0 THEN 1.0 ELSE e.strength + 0.1 END,
                     e.last_accessed = $now_datetime
                 WITH e
-                WHERE e.memory_type = 'short_term' AND e.access_count >= 3
-                SET e.memory_type = 'long_term',
-                    e.consolidated_at = $now_datetime
+                FOREACH (x IN CASE WHEN e.memory_type = 'short_term' AND e.access_count >= 3 THEN [1] ELSE [] END |
+                    SET e.memory_type = 'long_term',
+                        e.consolidated_at = $now_datetime
+                )
                 RETURN e.name AS name
                 """,
                 name=entity_name,
